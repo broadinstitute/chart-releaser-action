@@ -1,6 +1,10 @@
-# *chart-releaser* Action
+# *chart-releaser* Action - *BroadInstitute Fork* 
 
-A GitHub action to turn a GitHub project into a self-hosted Helm chart repo, using [helm/chart-releaser](https://github.com/helm/chart-releaser) CLI tool.
+A GitHub action to turn a GitHub project into a self-hosted Helm chart repo, using [BroadInstitute/chart-releaser](https://github.com/BroadInstitute/chart-releaser) CLI tool.
+
+This *BroadInstitute* fork mainly enhance the original project by enabling the content creation (Upload of the package)
+on an external repo. There was a requirement to store charts and Terraforms in one repo (GOTC Deploy)
+and publish charts in another repo (GOTC-helm-repo).    
 
 ## Usage
 
@@ -48,12 +52,12 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.0.0-rc.1
+        uses: BroadInstitute/chart-releaser-action@v1.0.0-rc.1
         env:
           CR_TOKEN: "${{ secrets.CR_TOKEN }}"
 ```
 
-This uses [@helm/chart-releaser-action](https://www.github.com/helm/chart-releaser-action) to turn your GitHub project into a self-hosted Helm chart repo.
+This uses [@BroadInstitute/chart-releaser-action](https://www.github.com/BroadInstitute/chart-releaser-action) to turn your GitHub project into a self-hosted Helm chart repo.
 It does this – during every push to `master` – by checking each chart in your project, and whenever there's a new chart version, creates a corresponding [GitHub release](https://help.github.com/en/github/administering-a-repository/about-releases) named for the chart version, adds Helm chart artifacts to the release, and creates or updates an `index.yaml` file with metadata about those releases, which is then hosted on GitHub Pages
 
 ## Code of conduct

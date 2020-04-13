@@ -50,7 +50,7 @@ main() {
     pushd "$repo_root" > /dev/null
 
     #defining new remote in case of pushing to external repo
-#    set -x
+    set -x
     create_new_remote
 
 # This doesn't work for a remote repo
@@ -193,7 +193,8 @@ create_new_remote() {
     remote_url=https://github.com/$owner/${repo}.git
     # add a new remote
     git remote add -t gh-pages remote2 $remote_url
-    git fetch --tags -f remote2 gh-pages
+    # fetch from the new remote
+    git fetch --tags -f remote2 gh-pages > /dev/null 2>&1
     # set the worktree on this new remote
     git worktree add "$gh_pages_worktree" gh-pages
 
