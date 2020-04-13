@@ -49,13 +49,19 @@ main() {
     repo_root=$(git rev-parse --show-toplevel)
     pushd "$repo_root" > /dev/null
 
-    echo 'Looking up latest tag...'
-    local latest_tag
-    latest_tag=$(lookup_latest_tag)
+    #defining new remote in case of pushing to external repo
+#    set -x
+    create_new_remote
 
-    echo "Discovering changed charts since '$latest_tag'..."
+# This doesn't work for a remote repo
+## TODO :  DELETE commented steps ##
+#    echo 'Looking up latest tag...'
+#    local latest_tag
+#    latest_tag=$(lookup_latest_tag)
+
+    echo "Discovering changed charts ..."
     local changed_charts=()
-    readarray -t changed_charts <<< "$(lookup_changed_charts "$latest_tag")"
+    readarray -t changed_charts <<< "$(lookup_changed_charts)"
 
     if [[ -n "${changed_charts[*]}" ]]; then
         install_chart_releaser
@@ -74,11 +80,16 @@ main() {
             fi
         done
 
+        #poor github struggling with logs rendering: git it some time
+        sleep 1
         release_charts
+        sleep 1
         update_index
+
     else
         echo "Nothing to do. No chart changes detected."
     fi
+
 
     popd > /dev/null
 }
@@ -173,13 +184,28 @@ install_chart_releaser() {
     sudo mv cr /usr/local/bin/cr
 }
 
-lookup_latest_tag() {
-    git fetch --tags > /dev/null 2>&1
+create_new_remote() {
+    echo "creating new remote..."
 
-    if ! git describe --tags --abbrev=0 2> /dev/null; then
-        git rev-list --max-parents=0 --first-parent HEAD
-    fi
+    gh_pages_worktree=$(mktemp -d)
+
+    # contruct remote url in case we publish on external repo
+    remote_url=https://github.com/$owner/${repo}.git
+    # add a new remote
+    git remote add -t gh-pages remote2 $remote_url
+    git fetch --tags -f remote2 gh-pages
+    # set the worktree on this new remote
+    git worktree add "$gh_pages_worktree" gh-pages
+
 }
+
+#lookup_latest_tag() {
+#    git fetch --tags > /dev/null 2>&1
+#
+#    if ! git describe --tags --abbrev=0 2> /dev/null; then
+#        git rev-list --max-parents=0 --first-parent HEAD
+#    fi
+#}
 
 filter_charts() {
     while read chart; do
@@ -194,10 +220,9 @@ filter_charts() {
 }
 
 lookup_changed_charts() {
-    local commit="$1"
-
+    #look up for changed files in the latest commit
     local changed_files
-    changed_files=$(git diff --find-renames --name-only "$commit" -- "$charts_dir")
+    changed_files=$(git diff-tree --no-commit-id --name-only -r $(git rev-parse HEAD))
 
     local fields
     if [[ "$charts_dir" == '.' ]]; then
@@ -218,7 +243,9 @@ package_chart() {
 
 release_charts() {
     echo 'Releasing charts...'
-    cr upload -o "$owner" -r "$repo"
+
+        cr upload -o "$owner" -r "$repo" -t "$CR_TOKEN"
+
 }
 
 update_index() {
@@ -226,11 +253,7 @@ update_index() {
 
     set -x
 
-    cr index -o "$owner" -r "$repo" -c "$charts_repo_url"
-
-    gh_pages_worktree=$(mktemp -d)
-
-    git worktree add "$gh_pages_worktree" gh-pages
+    cr index -o "$owner" -r "$repo" -c "$charts_repo_url" -t "$CR_TOKEN"
 
     cp --force .cr-index/index.yaml "$gh_pages_worktree/index.yaml"
 
@@ -239,8 +262,8 @@ update_index() {
     git add index.yaml
     git commit --message="Update index.yaml" --signoff
 
-    local repo_url="https://x-access-token:$CR_TOKEN@github.com/$owner/$repo"
-    git push "$repo_url" gh-pages
+    local repo_url=https://x-access-token:${CR_TOKEN}@github.com/${owner}/${repo}
+    git push "$repo_url" HEAD:gh-pages
 
     popd > /dev/null
 }

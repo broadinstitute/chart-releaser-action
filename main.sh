@@ -22,7 +22,14 @@ SCRIPT_DIR=$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}" || realpath "${BASH_S
 
 main() {
     owner=$(cut -d '/' -f 1 <<< "$GITHUB_REPOSITORY")
-    repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
+
+    if [[ -n "${INPUT_CHARTS_REPO:-}" ]]; then
+        #repo provided as input (most likely external repo)
+        repo=${INPUT_CHARTS_REPO}
+    else
+        #local repo - charts published in same repo
+        repo=$(cut -d '/' -f 2 <<< "$GITHUB_REPOSITORY")
+    fi
 
     args=(--owner "$owner" --repo "$repo")
     args+=(--charts-dir "${INPUT_CHARTS_DIR?Input 'charts_dir' is required}")
