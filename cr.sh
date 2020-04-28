@@ -50,7 +50,7 @@ main() {
     pushd "$repo_root" > /dev/null
 
     #defining new remote in case of pushing to external repo
-#    set -x
+    set -x
     create_new_remote
 
 # This doesn't work for a remote repo
