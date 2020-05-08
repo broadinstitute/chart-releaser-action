@@ -223,7 +223,7 @@ filter_charts() {
 lookup_changed_charts() {
     #look up for changed files in the latest commit
     local changed_files
-    changed_files=$(git diff-tree --no-commit-id --name-only -r $(git rev-parse HEAD))
+    changed_files=$(git diff-tree --no-commit-id --name-only -r $(git rev-parse HEAD) -- $charts_dir)
 
     local fields
     if [[ "$charts_dir" == '.' ]]; then
