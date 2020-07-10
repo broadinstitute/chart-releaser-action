@@ -49,8 +49,8 @@ main() {
     repo_root=$(git rev-parse --show-toplevel)
     pushd "$repo_root" > /dev/null
 
-    #defining new remote in case of pushing to external repo
-    #set -x
+    # defining new remote in case of pushing to external repo
+    # set -x
     create_new_remote
 
 # This doesn't work for a remote repo
@@ -239,7 +239,25 @@ package_chart() {
     local chart="$1"
 
     echo "Packaging chart '$chart'..."
-    helm package "$chart" --destination .cr-release-packages --dependency-update
+
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    if [[ "$branch" != 'master' ]]; then
+        version=$(helm show chart $chart | sed -ne 's/^version: //p')
+        timestamp=$(date +%s)
+        sha=$(git rev-parse --short=6 HEAD)
+        if echo $GITHUB_REF | grep 'refs/pull/'; then
+            pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+            rel_version="$version-$pull_number.$timestamp.$sha"
+            echo "In a PR. Releasing '$rel_version' version..."
+        else
+            rel_version="$version-$branch.$timestamp.$sha"
+            echo "Not on master branch. Releasing '$rel_version' version..."
+        fi
+
+        helm package "$chart" --version "$rel_version" --destination .cr-release-packages --dependency-update
+    else
+        helm package "$chart" --destination .cr-release-packages --dependency-update
+    fi
 }
 
 release_charts() {
